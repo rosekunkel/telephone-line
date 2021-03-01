@@ -159,10 +159,16 @@ color1 and color2."
    (alt-separator :initarg :alt-separator)
    (image-cache :initform (make-hash-table :test 'equal :size 10))))
 
+(defclass telephone-line-string-separator ()
+  ((str :initarg :string)))
+
 (cl-defmethod telephone-line-separator-height ((obj telephone-line-separator))
   (or telephone-line-height (frame-char-height)))
 
 (cl-defmethod telephone-line-separator-height ((obj telephone-line-unicode-separator))
+  (frame-char-height))
+
+(cl-defmethod telephone-line-separator-height ((_obj telephone-line-string-separator))
   (frame-char-height))
 
 (cl-defmethod telephone-line-separator-width ((obj telephone-line-separator))
@@ -171,6 +177,10 @@ color1 and color2."
 
 (cl-defmethod telephone-line-separator-width ((obj telephone-line-unicode-separator))
   (frame-char-width))
+
+(cl-defmethod telephone-line-separator-width ((obj telephone-line-string-separator))
+  (* (string-width (oref obj str)) (frame-char-width)))
+
 
 (defclass telephone-line-subseparator (telephone-line-separator)
   ((pattern-func :initarg :pattern-func
@@ -245,6 +255,18 @@ If it doesn't exist, create and cache it."
     (if window-system
         (telephone-line-separator-render-image obj fg-color bg-color)
       (telephone-line-separator-render (oref obj alt-separator) fg-color bg-color))))
+
+(cl-defmethod telephone-line-separator-render ((obj telephone-line-string-separator) foreground background)
+  (let ((fg-color (telephone-line-separator--arg-handler foreground))
+        (bg-color (telephone-line-separator--arg-handler background))
+        (rendered-str (seq-copy (oref obj str))))
+    (add-face-text-property
+     0 (seq-length rendered-str)
+     `(:foreground ,fg-color
+       :background ,bg-color)
+     'append rendered-str)
+    rendered-str))
+
 
 (cl-defmethod telephone-line-separator-render ((obj telephone-line-nil-separator) foreground background)
   nil)
